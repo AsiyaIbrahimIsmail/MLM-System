@@ -10,7 +10,7 @@ require_once 'includes/auth.php';
 
 requireLogin();
 
-$sale_id = $_GET['id'] ?? 0;
+$sale_id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 
 if (!$sale_id) {
     header('Location: credit_sales.php');
@@ -44,10 +44,10 @@ $items = $stmt->fetchAll();
 
 // Get payments for this sale
 $stmt = $pdo->prepare("
-    SELECT * FROM payments WHERE credit_sale_id = ? OR customer_id = ?
+    SELECT * FROM payments WHERE credit_sale_id = ?
     ORDER BY payment_date DESC
 ");
-$stmt->execute([$sale_id, $sale['customer_id']]);
+$stmt->execute([$sale_id]);
 $payments = $stmt->fetchAll();
 
 // Calculate paid amount
@@ -143,7 +143,7 @@ foreach ($payments as $p) {
                 <h3>Quick Actions</h3>
             </div>
             <div class="card-body">
-                <a href="payments.php?customer_id=<?php echo $sale['customer_id']; ?>" class="btn btn-success w-full mb-2">
+                <a href="payments.php?customer_id=<?php echo (int) $sale['customer_id']; ?>&sale_id=<?php echo (int) $sale_id; ?>" class="btn btn-success w-full mb-2">
                     <i class="fas fa-money-bill-wave"></i> Record Payment
                 </a>
             </div>

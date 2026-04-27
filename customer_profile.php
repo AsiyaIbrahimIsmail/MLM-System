@@ -10,7 +10,7 @@ require_once 'includes/auth.php';
 
 requireLogin();
 
-$customer_id = $_GET['id'] ?? 0;
+$customer_id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 
 if (!$customer_id) {
     header('Location: customers.php');

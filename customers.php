@@ -89,9 +89,138 @@ if ($search) {
     ");
 }
 $customers = $stmt->fetchAll();
+$totalCustomers = count($customers);
+$totalCredit = array_sum(array_column($customers, 'total_credit'));
+$totalPaid = array_sum(array_column($customers, 'total_paid'));
+$totalBalance = $totalCredit - $totalPaid;
+
+function jsAttr($value) {
+    return htmlspecialchars(json_encode($value), ENT_QUOTES, 'UTF-8');
+}
 ?>
 <?php include 'includes/header.php'; ?>
 
+<style>
+.customers-page {
+    display: grid;
+    gap: 20px;
+}
+
+.customers-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.customer-summary-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+.customer-summary-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 44px;
+    color: var(--white);
+}
+
+.customer-summary-icon.primary { background: var(--primary-color); }
+.customer-summary-icon.warning { background: var(--warning-color); }
+.customer-summary-icon.success { background: var(--success-color); }
+.customer-summary-icon.danger { background: var(--danger-color); }
+
+.customer-summary-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    line-height: 1.2;
+}
+
+.customer-summary-label {
+    color: var(--gray-500);
+    font-size: 0.85rem;
+}
+
+.customers-toolbar {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.customers-toolbar form {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.customers-toolbar .search-input {
+    min-height: 42px;
+}
+
+.customers-table .table th,
+.customers-table .table td {
+    vertical-align: middle;
+}
+
+.customer-name-cell {
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.customer-muted-cell {
+    color: var(--gray-500);
+}
+
+.customers-table .table-actions {
+    justify-content: flex-end;
+    min-width: 112px;
+}
+
+.customers-table .table-actions button,
+.customers-table .table-actions a {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+}
+
+@media (max-width: 1200px) {
+    .customers-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .customers-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .customers-toolbar,
+    .customers-toolbar form,
+    .search-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .customers-toolbar .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<div class="customers-page">
 <?php if ($message): ?>
 <div class="alert alert-success" style="background: #d1fae5; color: #065f46; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
     <i class="fas fa-check-circle"></i> <?php echo $message; ?>
@@ -104,8 +233,39 @@ $customers = $stmt->fetchAll();
 </div>
 <?php endif; ?>
 
-<div class="search-bar">
-    <form method="GET" action="" style="display: flex; gap: 1rem; flex: 1;">
+<div class="customers-summary">
+    <div class="customer-summary-card">
+        <div class="customer-summary-icon primary"><i class="fas fa-users"></i></div>
+        <div>
+            <div class="customer-summary-value"><?php echo $totalCustomers; ?></div>
+            <div class="customer-summary-label">Customers</div>
+        </div>
+    </div>
+    <div class="customer-summary-card">
+        <div class="customer-summary-icon warning"><i class="fas fa-shopping-cart"></i></div>
+        <div>
+            <div class="customer-summary-value"><?php echo formatCurrency($totalCredit); ?></div>
+            <div class="customer-summary-label">Total Credit</div>
+        </div>
+    </div>
+    <div class="customer-summary-card">
+        <div class="customer-summary-icon success"><i class="fas fa-money-bill-wave"></i></div>
+        <div>
+            <div class="customer-summary-value"><?php echo formatCurrency($totalPaid); ?></div>
+            <div class="customer-summary-label">Total Paid</div>
+        </div>
+    </div>
+    <div class="customer-summary-card">
+        <div class="customer-summary-icon danger"><i class="fas fa-wallet"></i></div>
+        <div>
+            <div class="customer-summary-value"><?php echo formatCurrency($totalBalance); ?></div>
+            <div class="customer-summary-label">Balance</div>
+        </div>
+    </div>
+</div>
+
+<div class="search-bar customers-toolbar">
+    <form method="GET" action="">
         <input type="text" class="search-input" name="search" placeholder="Search customers..." value="<?php echo htmlspecialchars($search); ?>">
         <button type="submit" class="btn btn-primary">
             <i class="fas fa-search"></i> Search
@@ -116,7 +276,7 @@ $customers = $stmt->fetchAll();
     </button>
 </div>
 
-<div class="table-container">
+<div class="table-container customers-table">
     <table class="table" id="customersTable">
         <thead>
             <tr>
@@ -133,8 +293,8 @@ $customers = $stmt->fetchAll();
             <?php foreach ($customers as $customer): ?>
             <?php $balance = $customer['total_credit'] - $customer['total_paid']; ?>
             <tr>
-                <td><?php echo htmlspecialchars($customer['full_name']); ?></td>
-                <td><?php echo htmlspecialchars($customer['email'] ?? '-'); ?></td>
+                <td class="customer-name-cell"><?php echo htmlspecialchars($customer['full_name']); ?></td>
+                <td class="customer-muted-cell"><?php echo htmlspecialchars($customer['email'] ?? '-'); ?></td>
                 <td><?php echo htmlspecialchars($customer['phone']); ?></td>
                 <td><?php echo formatCurrency($customer['total_credit']); ?></td>
                 <td><?php echo formatCurrency($customer['total_paid']); ?></td>
@@ -145,10 +305,10 @@ $customers = $stmt->fetchAll();
                 </td>
                 <td>
                     <div class="table-actions">
-                        <button class="edit-btn" onclick="editCustomer(<?php echo $customer['id']; ?>, '<?php echo htmlspecialchars($customer['full_name']); ?>', '<?php echo htmlspecialchars($customer['email'] ?? ''); ?>', '<?php echo htmlspecialchars($customer['phone']); ?>', '<?php echo htmlspecialchars($customer['address'] ?? ''); ?>')">
+                        <button class="edit-btn" onclick="editCustomer(<?php echo (int) $customer['id']; ?>, <?php echo jsAttr($customer['full_name']); ?>, <?php echo jsAttr($customer['email'] ?? ''); ?>, <?php echo jsAttr($customer['phone']); ?>, <?php echo jsAttr($customer['address'] ?? ''); ?>)">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="delete-btn" onclick="deleteCustomer(<?php echo $customer['id']; ?>, '<?php echo htmlspecialchars($customer['full_name']); ?>')">
+                        <button class="delete-btn" onclick="deleteCustomer(<?php echo (int) $customer['id']; ?>, <?php echo jsAttr($customer['full_name']); ?>)">
                             <i class="fas fa-trash"></i>
                         </button>
                         <a href="customer_profile.php?id=<?php echo $customer['id']; ?>" class="edit-btn" title="View Profile">
@@ -172,6 +332,7 @@ $customers = $stmt->fetchAll();
             <?php endif; ?>
         </tbody>
     </table>
+</div>
 </div>
 
 <!-- Add Customer Modal -->

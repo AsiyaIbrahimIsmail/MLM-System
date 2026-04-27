@@ -13,6 +13,10 @@ requireLogin();
 $message = '';
 $error = '';
 
+function jsAttr($value) {
+    return htmlspecialchars(json_encode($value), ENT_QUOTES, 'UTF-8');
+}
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $action = $_POST['action'] ?? '';
@@ -20,9 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($action == 'add') {
         $product_name = sanitize($_POST['product_name'] ?? '');
         $description = sanitize($_POST['description'] ?? '');
-        $unit_price = $_POST['unit_price'] ?? 0;
+        $unit_price = filter_var($_POST['unit_price'] ?? null, FILTER_VALIDATE_FLOAT);
 
-        if (empty($product_name) || empty($unit_price)) {
+        if (empty($product_name) || $unit_price === false || $unit_price <= 0) {
             $error = 'Product name and price are required';
         } else {
             try {
@@ -37,9 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $id = $_POST['id'] ?? '';
         $product_name = sanitize($_POST['product_name'] ?? '');
         $description = sanitize($_POST['description'] ?? '');
-        $unit_price = $_POST['unit_price'] ?? 0;
+        $unit_price = filter_var($_POST['unit_price'] ?? null, FILTER_VALIDATE_FLOAT);
 
-        if (empty($id) || empty($product_name) || empty($unit_price)) {
+        if (empty($id) || empty($product_name) || $unit_price === false || $unit_price <= 0) {
             $error = 'Product name and price are required';
         } else {
             try {
@@ -107,10 +111,10 @@ $products = $stmt->fetchAll();
                 <td><?php echo formatCurrency($product['unit_price']); ?></td>
                 <td>
                     <div class="table-actions">
-                        <button class="edit-btn" onclick="editProduct(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['product_name']); ?>', '<?php echo htmlspecialchars($product['description'] ?? ''); ?>', '<?php echo $product['unit_price']; ?>')">
+                        <button class="edit-btn" onclick="editProduct(<?php echo (int) $product['id']; ?>, <?php echo jsAttr($product['product_name']); ?>, <?php echo jsAttr($product['description'] ?? ''); ?>, <?php echo jsAttr($product['unit_price']); ?>)">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="delete-btn" onclick="deleteProduct(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['product_name']); ?>')">
+                        <button class="delete-btn" onclick="deleteProduct(<?php echo (int) $product['id']; ?>, <?php echo jsAttr($product['product_name']); ?>)">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -153,7 +157,7 @@ $products = $stmt->fetchAll();
                 </div>
                 <div class="form-group">
                     <label class="form-label">Unit Price *</label>
-                    <input type="number" class="form-control" name="unit_price" placeholder="0.00" step="0.01" min="0" required>
+                    <input type="number" class="form-control" name="unit_price" placeholder="0.00" step="0.01" min="0.01" required>
                 </div>
             </div>
             <div class="modal-footer">
@@ -185,7 +189,7 @@ $products = $stmt->fetchAll();
                 </div>
                 <div class="form-group">
                     <label class="form-label">Unit Price *</label>
-                    <input type="number" class="form-control" name="unit_price" id="editProductPrice" step="0.01" min="0" required>
+                    <input type="number" class="form-control" name="unit_price" id="editProductPrice" step="0.01" min="0.01" required>
                 </div>
             </div>
             <div class="modal-footer">

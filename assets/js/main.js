@@ -10,6 +10,41 @@ document.addEventListener('DOMContentLoaded', function() {
             loadingOverlay.classList.add('hidden');
         }
     }, 500);
+    
+    // Add ripple effect to buttons
+    document.querySelectorAll('.btn').forEach(button => {
+        button.addEventListener('click', createRipple);
+    });
+    
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+    
+    // Intersection Observer for scroll animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate-in');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+    
+    document.querySelectorAll('.card, .stat-card, .feature-card').forEach(el => {
+        observer.observe(el);
+    });
 });
 
 // Mobile Navigation Toggle
@@ -30,6 +65,30 @@ if (sidebarToggle) {
     });
 }
 
+// Close toast with animation
+function closeToast(toast) {
+    toast.style.animation = 'slideOutRight 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+}
+
+// Ripple Effect for Buttons
+function createRipple(event) {
+    const button = event.currentTarget;
+    const ripple = document.createElement('span');
+    ripple.classList.add('ripple');
+    
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = event.clientX - rect.left - size / 2 + 'px';
+    ripple.style.top = event.clientY - rect.top - size / 2 + 'px';
+    
+    button.appendChild(ripple);
+    
+    ripple.addEventListener('animationend', () => ripple.remove());
+}
+
 // Toast Notifications
 function showToast(message, type = 'success') {
     const container = document.getElementById('toastContainer');
@@ -46,7 +105,7 @@ function showToast(message, type = 'success') {
     toast.innerHTML = `
         <i class="fas ${icons[type]} toast-icon"></i>
         <span class="toast-message">${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">
+        <button class="toast-close" onclick="closeToast(this.parentElement)">
             <i class="fas fa-times"></i>
         </button>
     `;
@@ -54,7 +113,7 @@ function showToast(message, type = 'success') {
     container.appendChild(toast);
 
     setTimeout(() => {
-        toast.remove();
+        if (toast.parentElement) closeToast(toast);
     }, 5000);
 }
 
@@ -442,4 +501,103 @@ function throttle(func, limit) {
             setTimeout(() => inThrottle = false, limit);
         }
     };
+}
+
+// Number Counter Animation
+function animateCounter(element, target, prefix = '', suffix = '', duration = 2000) {
+    const start = 0;
+    const startTime = performance.now();
+    const isCurrency = target.toString().includes('.');
+    
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const current = start + (target - start) * easeOut;
+        
+        element.textContent = prefix + current.toFixed(isCurrency ? 2 : 0) + suffix;
+        
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+    
+    requestAnimationFrame(update);
+}
+
+// Search with highlight
+function highlightSearchTerm(row, term) {
+    if (!term || !row) return;
+    
+    const text = row.textContent.toLowerCase();
+    const searchTerm = term.toLowerCase();
+    
+    if (text.includes(searchTerm)) {
+        row.style.animation = 'highlightPulse 0.5s ease';
+        row.classList.add('highlighted');
+    }
+}
+
+// Add smooth page transitions
+function initPageTransitions() {
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.opacity = '0';
+        mainContent.style.transform = 'translateY(20px)';
+        mainContent.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        
+        requestAnimationFrame(() => {
+            mainContent.style.opacity = '1';
+            mainContent.style.transform = 'translateY(0)';
+        });
+    }
+}
+
+// Initialize with page transitions
+document.addEventListener('DOMContentLoaded', function() {
+    initPageTransitions();
+});
+
+// Scroll to top button
+function createScrollTopButton() {
+    const btn = document.createElement('button');
+    btn.id = 'scrollTopBtn';
+    btn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+    btn.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        cursor: pointer;
+        box-shadow: var(--shadow-lg);
+        z-index: 9999;
+        opacity: 0;
+        transform: translateY(100px);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    `;
+    
+    btn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
+    document.body.appendChild(btn);
+    
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 300) {
+            btn.style.opacity = '1';
+            btn.style.transform = 'translateY(0)';
+        } else {
+            btn.style.opacity = '0';
+            btn.style.transform = 'translateY(100px)';
+        }
+    });
 }

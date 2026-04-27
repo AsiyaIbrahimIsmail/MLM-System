@@ -26,9 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action == 'add') {
-        $customer_id = $_POST['customer_id'] ?? '';
+        $customer_id = filter_var($_POST['customer_id'] ?? null, FILTER_VALIDATE_INT);
         $sale_date = $_POST['sale_date'] ?? date('Y-m-d');
-        $due_date = $_POST['due_date'] ?? null;
+        $due_date = $_POST['due_date'] ?: null;
         $notes = sanitize($_POST['notes'] ?? '');
 
         // Get product details from form
@@ -36,7 +36,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $quantities = $_POST['quantity'] ?? [];
         $unit_prices = $_POST['unit_price'] ?? [];
 
-        if (empty($customer_id) || empty($product_ids)) {
+        $validItems = [];
+        foreach ($product_ids as $index => $product_id) {
+            $product_id = filter_var($product_id, FILTER_VALIDATE_INT);
+            $qty = filter_var($quantities[$index] ?? null, FILTER_VALIDATE_INT);
+            $price = filter_var($unit_prices[$index] ?? null, FILTER_VALIDATE_FLOAT);
+
+            if ($product_id && $qty && $qty > 0 && $price !== false && $price >= 0) {
+                $validItems[] = [
+                    'product_id' => $product_id,
+                    'quantity' => $qty,
+                    'unit_price' => $price,
+                    'subtotal' => $qty * $price,
+                ];
+            }
+        }
+
+        if (empty($customer_id)) {
+            $error = 'Please select a valid customer';
+        } elseif (empty($validItems)) {
             $error = 'Customer and at least one product are required';
         } else {
             try {
@@ -44,10 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 // Calculate total amount
                 $total_amount = 0;
-                foreach ($product_ids as $index => $product_id) {
-                    $qty = intval($quantities[$index] ?? 1);
-                    $price = floatval($unit_prices[$index] ?? 0);
-                    $total_amount += $qty * $price;
+                foreach ($validItems as $item) {
+                    $total_amount += $item['subtotal'];
+                }
+
+                if ($total_amount <= 0) {
+                    throw new InvalidArgumentException('Total amount must be greater than zero');
                 }
 
                 // Insert credit sale
@@ -56,21 +76,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $credit_sale_id = $pdo->lastInsertId();
 
                 // Insert sale items
-                foreach ($product_ids as $index => $product_id) {
-                    if (empty($product_id)) continue;
-
-                    $qty = intval($quantities[$index] ?? 1);
-                    $price = floatval($unit_prices[$index] ?? 0);
-                    $subtotal = $qty * $price;
-
+                foreach ($validItems as $item) {
                     $stmt = $pdo->prepare("INSERT INTO credit_sale_items (credit_sale_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->execute([$credit_sale_id, $product_id, $qty, $price, $subtotal]);
+                    $stmt->execute([$credit_sale_id, $item['product_id'], $item['quantity'], $item['unit_price'], $item['subtotal']]);
                 }
 
                 $pdo->commit();
                 $message = 'Credit sale recorded successfully';
+            } catch (InvalidArgumentException $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $error = $e->getMessage();
             } catch (PDOException $e) {
-                $pdo->rollBack();
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
                 $error = 'Failed to add credit sale: ' . $e->getMessage();
             }
         }
@@ -277,6 +298,16 @@ $sales = $stmt->fetchAll();
 <script>
 const productsData = <?php echo json_encode($products); ?>;
 
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[char]));
+}
+
 function loadCustomerBalance(customerId) {
     if (!customerId) {
         document.getElementById('customerBalance').textContent = '$0.00';
@@ -301,7 +332,7 @@ function addItemRow() {
 
     let options = '<option value="">Select Product</option>';
     productsData.forEach(p => {
-        options += `<option value="${p.id}" data-price="${p.unit_price}">${p.product_name}</option>`;
+        options += `<option value="${p.id}" data-price="${p.unit_price}">${escapeHtml(p.product_name)}</option>`;
     });
 
     row.innerHTML = `

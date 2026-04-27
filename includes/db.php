@@ -6,13 +6,14 @@
 
 // Database configuration
 define('DB_HOST', 'localhost');
+define('DB_PORT', '3307');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'business_loan_management');
 
 try {
     // Create database connection using PDO
-    $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+    $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
     $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

@@ -7,7 +7,7 @@ require_once 'includes/db.php';
 
 header('Content-Type: application/json');
 
-$customer_id = $_GET['id'] ?? 0;
+$customer_id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 
 if (!$customer_id) {
     echo json_encode(['balance' => 0]);

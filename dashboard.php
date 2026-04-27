@@ -63,6 +63,286 @@ $monthlyPayments = $stmt->fetchAll();
 ?>
 <?php include 'includes/header.php'; ?>
 
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-content {
+    min-width: 0;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.stat-icon.primary {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+}
+
+.stat-icon.success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.stat-icon.warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.stat-icon.danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.stat-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.stat-label {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.chart-card h3 {
+    font-size: 1.1rem;
+    color: #1e3a5f;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.chart-container {
+    position: relative;
+    height: 280px;
+}
+
+.dashboard-section {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.dashboard-section .card {
+    border-radius: 8px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+}
+
+.dashboard-section .card-header {
+    background: linear-gradient(135deg, #1e3a5f, #2d5a8a);
+    color: white;
+    padding: 12px 14px;
+    border-bottom: none;
+}
+
+.dashboard-section .card-header h3 {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+}
+
+.dashboard-section .card-header h3 i {
+    margin-right: 8px;
+}
+
+.dashboard-section .card-body {
+    padding: 0;
+}
+
+.dashboard-section .table {
+    margin: 0;
+}
+
+.dashboard-section .table th {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.8rem;
+    padding: 12px 16px;
+}
+
+.dashboard-section .table td {
+    padding: 10px 12px;
+    font-size: 0.84rem;
+}
+
+@media (max-width: 1200px) {
+    .dashboard-section {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 992px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+    
+    .stat-card {
+        padding: 12px;
+    }
+    
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+    
+    .stat-value {
+        font-size: 1rem;
+    }
+    
+    .chart-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .chart-card {
+        padding: 16px;
+    }
+    
+    .chart-container {
+        height: 220px;
+    }
+    
+    .dashboard-section {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        flex-direction: row;
+        text-align: left;
+    }
+    
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .stat-value {
+        font-size: 1rem;
+    }
+    
+    .chart-card h3 {
+        font-size: 1rem;
+    }
+    
+    .chart-container {
+        height: 200px;
+    }
+}
+
+@media (max-width: 576px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        padding: 12px;
+    }
+    
+    .stat-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.1rem;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+    }
+    
+    .chart-card {
+        padding: 12px;
+    }
+    
+    .chart-container {
+        height: 180px;
+    }
+    
+    .dashboard-section .card-header {
+        padding: 12px 16px;
+    }
+    
+    .dashboard-section .card-header h3 {
+        font-size: 0.9rem;
+    }
+    
+    .dashboard-section .table th,
+    .dashboard-section .table td {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+}
+</style>
+
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-icon primary">
@@ -121,7 +401,7 @@ $monthlyPayments = $stmt->fetchAll();
     </div>
 </div>
 
-<div class="features-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 2rem;">
+<div class="dashboard-section">
     <div class="card">
         <div class="card-header">
             <h3><i class="fas fa-users"></i> Recent Customers</h3>

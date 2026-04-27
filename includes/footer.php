@@ -12,7 +12,7 @@
     <!-- Toast Notifications -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <footer class="<?php echo isset($isDashboardPage) ? 'dashboard-footer' : 'footer'; ?>">
+    <footer class="<?php echo isset($isDashboardPage) ? 'footer dashboard-footer' : 'footer'; ?>">
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
